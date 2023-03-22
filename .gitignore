@@ -1,0 +1,41 @@
+# Project exclude paths
+/.gradle/
+/Indigo Card Game/task/build/
+/Indigo Card Game/task/out/
+/Indigo Card Game/task/out/production/classes/
+/Topics/Constructors/Init usage/out/
+/Topics/Constructors/Init usage/out/production/classes/
+/Topics/Data class/toString() modification/out/
+/Topics/Data class/toString() modification/out/production/classes/
+/Topics/Default arguments/Summation/out/
+/Topics/Default arguments/Summation/out/production/classes/
+/Topics/Enum/The rainbow order/out/
+/Topics/Enum/The rainbow order/out/production/classes/
+/Topics/For loop and lists/Triples/out/
+/Topics/For loop and lists/Triples/out/production/classes/
+/Topics/Functions as objects/Function generator/out/
+/Topics/Functions as objects/Function generator/out/production/classes/
+/Topics/Getting substrings/The last of u/out/
+/Topics/Getting substrings/The last of u/out/production/classes/
+/Topics/Hierarchy of exceptions/RuntimeException/out/
+/Topics/Hierarchy of exceptions/RuntimeException/out/production/classes/
+/Topics/Inheritance/Create a child class/out/
+/Topics/Inheritance/Create a child class/out/production/classes/
+/Topics/Integers in action/The sum of digits/out/
+/Topics/Integers in action/The sum of digits/out/production/classes/
+/Topics/Jumps and returns/Beyond the word/out/
+/Topics/Jumps and returns/Beyond the word/out/production/classes/
+/Topics/Mutable List/Remove us/out/
+/Topics/Mutable List/Remove us/out/production/classes/
+/Topics/Null safety/Elvis throwing exceptions/out/
+/Topics/Null safety/Elvis throwing exceptions/out/production/classes/
+/Topics/Processing strings/Double characters/out/
+/Topics/Processing strings/Double characters/out/production/classes/
+/Topics/Property accessors/City population/out/
+/Topics/Property accessors/City population/out/production/classes/
+/Topics/Property accessors/Implement a class/out/
+/Topics/Property accessors/Implement a class/out/production/classes/
+/Topics/Taming exceptions/Too big for us/out/
+/Topics/Taming exceptions/Too big for us/out/production/classes/
+/Topics/Type conversion/The superior forces of the Empire/out/
+/Topics/Type conversion/The superior forces of the Empire/out/production/classes/
