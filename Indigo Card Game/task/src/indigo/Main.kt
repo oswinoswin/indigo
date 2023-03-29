@@ -1,14 +1,29 @@
 package indigo
 
-class Deck {
-    private val ranks = listOf("A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K")
-    private val suits = listOf("♦", "♥", "♠", "♣")
-    private var deckBase :List<String>
-    private var deck = mutableListOf<String>()
+val WINNING_RANKS = listOf<String>("A", "10", "J", "Q", "K")
+val RANKS = listOf("A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K")
+val SUITS = listOf("♦", "♥", "♠", "♣")
+val DECK_SIZE = 12
+data class Card(val rank :String, val suit :String){
+    var points = 0
     init {
-        for(suit in suits){
-            for(rank in ranks){
-                deck.add(rank+suit)
+        points = if (rank in WINNING_RANKS) 1 else 0
+    }
+    fun matches(other :Card): Boolean {
+        return this.rank == other.rank || this.suit == other.suit
+    }
+    override fun toString(): String {
+        return "$rank$suit"
+    }
+}
+
+class Deck {
+    private var deckBase :List<Card>
+    private var deck = mutableListOf<Card>()
+    init {
+        for(suit in SUITS){
+            for(rank in RANKS){
+                deck.add(Card(rank, suit))
             }
         }
         deckBase = deck.toList()
@@ -21,19 +36,17 @@ class Deck {
         deck.shuffle()
     }
 
-    fun get(amount: Int): MutableList<String> {
-        if (amount == null || amount < 1 || amount > 52) {
-//            println("Invalid number of cards.")
+    fun get(amount: Int): MutableList<Card> {
+        if (amount == null || amount < 1 || amount > DECK_SIZE) {
             throw Exception("Invalid number of cards")
         }
         if ( amount > deck.size) {
             throw Exception("The remaining cards are insufficient to meet the request.")
         }
-        val hand = mutableListOf<String>()
+        val hand = mutableListOf<Card>()
         repeat(amount){
             hand.add(deck.removeFirst())
         }
-//        println(hand.joinToString(" "))
         return hand
     }
 
@@ -46,37 +59,124 @@ class Deck {
     }
 }
 
-open class Player {
-    val hand: MutableList<String>
-    val cardsWon = mutableListOf<String>()
-    constructor(cards: MutableList<String>){
-        this.hand = cards
+open class PlayerSuperclass(val hand: MutableList<Card>) {
+    private val cardsWon = mutableListOf<Card>()
+    private var score = 0
+    private var won = 0
+    var ownsMostCards = false
+    open fun playCard(topCard :Card?) :Card{
+        return hand.last()
     }
 
-    open fun turn(){
-
+    fun collectCard(card: Card ){
+        cardsWon.add(card)
+        won ++
+        score += card.points
     }
 
-    fun printHand(){
+    open fun wins(){
+        println("")
+    }
+
+    fun collectedCards() = won
+    fun score() = if (ownsMostCards) score + 3 else score
+}
+
+open class Player(cards: MutableList<Card>) :PlayerSuperclass(cards){
+    private fun printHand(){
         print("Cards in hand: ")
         hand.forEachIndexed { index, s ->  print("${index + 1})$s ") }
         print("\n")
     }
+
+    override fun wins() {
+        println("Player wins cards")
+    }
+
+    override fun playCard(topCard: Card?): Card {
+        printHand()
+        val cardNum = askForCardNumber()
+        return hand.removeAt(cardNum)
+    }
+
+    private fun askForCardNumber(): Int {
+        println("Choose a card to play (1-${hand.size}):")
+        val answer = readln()
+        if (answer == "exit") {
+             throw Exception("Exit")
+        }
+        val num = answer.toIntOrNull()
+        if (num == null || num < 1 || num > hand.size) return askForCardNumber()
+        return num.minus(1)
+    }
+
+
 }
 
-class Computer(cards: MutableList<String>) : Player(cards) {
-    override fun turn(){
-        println("Computer plays")
+class Computer(cards: MutableList<Card>) : PlayerSuperclass(cards) {
+
+    private fun findSameSuit() : Card? {
+        val cardsToThrow = mutableListOf<Card>()
+        for(suit in SUITS){
+            val tmp = hand.filter { card -> card.suit == suit }
+            if(tmp.size >= 2) cardsToThrow.addAll(tmp)
+        }
+        return cardsToThrow.randomOrNull()
+    }
+    private fun findSameRank() :Card? {
+        val cardsToThrow = mutableListOf<Card>()
+        for(rank in RANKS){
+            val tmp = hand.filter { card -> card.rank == rank }
+            if(tmp.size >= 2) cardsToThrow.addAll(tmp)
+        }
+        return cardsToThrow.randomOrNull()
+    }
+
+    override fun playCard(topCard :Card?) :Card {
+        println(hand.joinToString(" "))
+        var cardToPlay :Card = hand.random()
+        if (topCard == null){
+            if (findSameSuit() != null) cardToPlay = findSameSuit()!!
+            else if (findSameRank() != null) cardToPlay = findSameRank()!!
+        }
+        else {
+            val candidateSuits = hand.filter { card -> card.suit == topCard.suit }
+            val candidateRanks = hand.filter { card -> card.rank == topCard.rank }
+            if(candidateSuits.isEmpty() && candidateRanks.isEmpty()) {
+                if (findSameSuit() != null) cardToPlay = findSameSuit()!!
+                else if (findSameRank() != null) cardToPlay = findSameRank()!!
+            }
+            else if (candidateSuits.size >= 2) {
+                cardToPlay = candidateSuits.random()
+            } else if(candidateSuits.size <2 && candidateRanks.size >= 2){
+                cardToPlay = candidateRanks.random()
+            }else{
+                val candidates = candidateSuits.toMutableList()
+                candidates.addAll(candidateRanks)
+                cardToPlay = candidates.random()
+            }
+
+        }
+
+        hand.remove(cardToPlay)
+        println("Computer plays ${cardToPlay}\n")
+        return cardToPlay
+    }
+    override fun wins() {
+        println("Computer wins cards")
     }
 }
 
 
+
 class Game {
-    val deck = Deck()
-    val table = mutableListOf<String>()
-    val player :Player
-    val computer :Player
-    var continueGame = true
+    private val deck = Deck()
+    private val table = mutableListOf<Card>()
+    private val player :PlayerSuperclass
+    private val computer :PlayerSuperclass
+    private var computerWonLast = true
+    private var continueGame = true
+    private var computerStarts = true
 
     init {
         deck.shuffle()
@@ -85,7 +185,7 @@ class Game {
         player = Player(deck.get(6))
     }
 
-    private fun topCard(): String {
+    private fun topCard(): Card {
         return table.last()
     }
 
@@ -93,31 +193,29 @@ class Game {
         return table.size
     }
 
-    fun gameShouldEnd(): Boolean {
-        if(cardsOnTable() < 8 || !continueGame) return false //ugly, but has to do for now
-        else {
-            continueGame = false
-            println("52 cards on the table, and the top card is ${topCard()}")
-            return true
-        }
-    }
-
     fun play(){
         println("Indigo Card Game")
-        var firstAction = ::computerTurn
-        var secondAction = ::playerTurn
+        var firstPlayer = computer
+        var secondPlayer = player
         if (askForFirstPlayer()){
-            firstAction = ::playerTurn
-            secondAction = ::computerTurn
+            firstPlayer = player
+            secondPlayer = computer
+            computerStarts = false
+            computerWonLast = false
         }
         println("Initial cards on the table: ${table.joinToString(" ")}")
         while (continueGame){
-            firstAction()
+            turn(firstPlayer)
             if(! continueGame) break
-            secondAction()
+            turn(secondPlayer)
             if(! continueGame) break
-            if(computer.hand.isEmpty() && player.hand.isEmpty()){
-                if(deck.cardsLeft() < 12) break
+            if(computer.hand.isEmpty() && player.hand.isEmpty()){  //deal more cards if needed
+                if(deck.cardsLeft() < 12) {
+                    //normal end of game
+                    countRemainingCards()
+                    exitMessage()
+                    break
+                }
                 else{
                     computer.hand.addAll(deck.get(6))
                     player.hand.addAll(deck.get(6))
@@ -125,52 +223,65 @@ class Game {
             }
         }
 
-        println("${cardsOnTable()} cards on the table, and the top card is ${topCard()}")
-        println("Game Over")
-
+    }
+    private fun countRemainingCards(){
+        val lastWinner = if(computerWonLast) computer else player
+        for(card in table){
+            lastWinner.collectCard(card.copy())
+        }
+        if(computer.collectedCards() > player.collectedCards() || (computer.collectedCards() == player.collectedCards() && computerStarts)){
+            computer.ownsMostCards = true
+            player.ownsMostCards = false
+        } else {
+            computer.ownsMostCards = false
+            player.ownsMostCards = true
+        }
     }
 
-    fun askForFirstPlayer(): Boolean {
+    private fun printScore(){
+
+        println("Score: Player ${player.score()} - Computer ${computer.score()}\n" +
+                "Cards: Player ${player.collectedCards()} - Computer ${computer.collectedCards()}")
+    }
+    private fun turn(currentPlayer: PlayerSuperclass){
+        println(if(!table.isEmpty())
+            "${cardsOnTable()} cards on the table, and the top card is ${topCard()}" else "No cards on the table"
+        )
+        try {
+            val playedCard = currentPlayer.playCard(table.lastOrNull())
+            //check if player should get the card
+            if (table.isNotEmpty() && playedCard.matches(topCard())) {
+                currentPlayer.collectCard(playedCard)
+                table.forEach { card -> currentPlayer.collectCard(card) }
+                table.clear()
+                currentPlayer.wins()
+                printScore()
+                computerWonLast = currentPlayer != player
+            }
+            else {
+                table.add(playedCard)
+            }
+        }
+        catch (e: Exception){
+            println("Game Over")
+            continueGame = false
+        }
+    }
+    private fun askForFirstPlayer(): Boolean {
         println("Play first?")
-        when(readln()) {
-            "yes" -> return true
-            "no" -> return false
-            else -> return askForFirstPlayer()
+        return when(readln()) {
+            "yes" -> true
+            "no" -> false
+            else -> askForFirstPlayer()
         }
     }
-    fun askForCardNumber(): Int? {
-        println("Choose a card to play (1-${player.hand.size}):")
-        val answer = readln()
-        if (answer == "exit") {
-            exit()
-            return null
-        }
-        val num = answer.toIntOrNull()
-        if (num == null || num < 1 || num > player.hand.size) return askForCardNumber()
-        return num?.minus(1)
-//        return num?.plus(1)
-    }
 
-    fun playerTurn(){
-        println("${cardsOnTable()} cards on the table, and the top card is ${topCard()}")
-        player.printHand()
-        var cardIndex = askForCardNumber()
-        if(cardIndex == null) return
-        var playedCard = player.hand.removeAt(cardIndex!!)
-        table.add(playedCard)
-    }
-
-    fun computerTurn(){
-        println("${cardsOnTable()} cards on the table, and the top card is ${topCard()}")
-        var playedCard = computer.hand.removeLast()
-        println("Computer plays $playedCard\n")
-        table.add(playedCard)
-
-    }
-
-    fun exit(){
-        println("Game over")
-        continueGame = false
+    fun exitMessage(){
+        println(if(!table.isEmpty())
+            "${cardsOnTable()} cards on the table, and the top card is ${topCard()}" else "No cards on the table"
+        )
+        printScore()
+        println("Game Over")
     }
 }
 
